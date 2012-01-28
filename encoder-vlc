@@ -1,0 +1,4 @@
+#!/bin/bash
+mkdir -p "$1.stream"
+cd "$1.stream"
+vlc -I dummy --ignore-config - '--sout=#transcode{vcodec=h264,soverlay,acodec=mp3,channels=2,venc=x264{profile=baseline,level=2.2,keyint=45,bframes=0,ref=1,nocabac},width=320,vb=100,ab=40,fps=25}:std{access=livehttp{seglen=10,index="stream.m3u8",index-url=stream-###.ts},mux=ts{use-key-frames},dst="stream-###.ts"}' vlc://quit

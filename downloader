@@ -3,6 +3,7 @@ from subprocess import Popen, PIPE
 import libtorrent as lt
 import time
 import sys
+import re
 
 # Incapsulate decoding stream
 class Stream:
@@ -12,12 +13,12 @@ class Stream:
         self.current = 0
         self.worker = None
         self.source = None
-        self.test = None
+        self.closed = False
     
     # Send piece of downloaded file to convertor pipe
     def feed(self, offset, size):
         if not self.worker:
-            self.worker = Popen(['./encoder', self.path], stdin=PIPE)
+            self.worker = Popen(['./encoder-vlc', self.path], stdin=PIPE)
         if not self.source:
             self.source = open(self.path,'r')
 
@@ -27,6 +28,8 @@ class Stream:
 
     # Check for new pieces and feed convertor
     def pump(self):
+        if self.closed:
+            return
         s = self.loader.torrent.status()
         while( (self.current < self.size) and s.pieces[ self.piece ] ):
             piece_len = self.loader.info.piece_size( self.piece )
@@ -40,11 +43,18 @@ class Stream:
     # Close opened handles
     def close(self):
         if self.worker:
-            self.worker.stdin.close()
+            try:
+                self.worker.stdin.close()
+            except:
+                pass
             self.worker = None
         if self.source:
-            self.source.close()
+            try:
+                self.source.close()
+            except:
+                pass
             self.source = None
+        self.closed = True
 
 # Torrent sequental loader
 class Loader:
@@ -75,8 +85,11 @@ class Loader:
         priority     = [0] * num_files
 
         for index in xrange(0,num_files):
-            stream = Stream(self)
             entry  = self.info.file_at(index)
+            if not re.match('^.+\.avi$', entry.path):
+                continue
+
+            stream = Stream(self)
             preq   = self.info.map_file(index, 0, 0)
             stream.index = index
             stream.piece = preq.piece
@@ -116,7 +129,11 @@ class Loader:
     # Pump data to convertors
     def pump(self):
         for stream in self.streams:
-            stream.pump()
+            try:
+                stream.pump()
+            except Exception as e:
+                print >> sys.stderr, "Stream error: %s" % e
+                stream.close()
 
     # Run until complete
     def run(self):
