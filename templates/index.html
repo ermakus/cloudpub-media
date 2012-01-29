@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block sidebar %}
+    <ul class="nav">
+        <li><a href='javascript:{% include "bookmarklet.js" %}'><span class="ico msg"></span>Download Torrent</a></li>
+        {% for torrent in torrents %}
+        <li><a href="#{{ torrent.path }}" class="active"><span class="ico msg"></span>{{ torrent.path }}</a></li>
+        {% end %}
+    </ul>
+{% end %}
+		
+{% block content %}
+    <h2 class="title">Heading first</h2>
+
+    <div class="box-white">
+        <p>Lorem ipsum <span class="detail">Details here</span><span>Dolor</span></p>
+    </div><!--box-white-->
+
+    <h2 class="title2">Heading second</h2>
+    
+    <p>This is a normal paragraph to add any text you like.</p>
+
+    <div class="box-white">
+        <p>Parameter <span>Value</span></p>
+        <p><a href="./index_files/index.html">Clickable row<span>Click me <span class="arrow">&gt;</span></span></a></p>
+        <p>Foo <span>Bar</span></p>
+        <p>Lorem ipsum <span><a href="./index_files/index.html">Click only this</a></span></p>
+    </div><!--box-white-->
+    
+    
+    <table>
+        <thead>
+            <tr><th>Table heading</th><th>Tweets</th><th>Following</th><th>Followers</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><a href="./index_files/index.html">@xaviesteve</a></td><td><a href="./index_files/index.html">Click</a></td><td>131</td><td>195</td></tr>
+            <tr><td>@xaviesteve</td><td>622</td><td><a href="./index_files/index.html">Click</a></td><td>195</td></tr>
+            <tr><td>@xaviesteve</td><td>622</td><td>131</td><td><a href="./index_files/index.html">Click</a></td></tr>
+        </tbody>
+    </table>
+    
+    <p class="note">You can follow me on Twitter for updates on this template at <a href="http://www.twitter.com/xaviesteve">@xaviesteve</a>.</p>
+            
+    <h2 class="title">Heading first</h2>
+
+    <div class="box-white">
+        <p class="center">Centered text in a white box</p>
+    </div><!--box-white-->
+    
+    <h2 class="title2">Account details</h2>
+    <p>Me got forms too:</p>
+    
+    <div class="box-white">
+        <p><label for="field1">Apple ID</label><input id="field1" type="text" value="xavi@example.com"></p>
+        <p><label for="field2">Password</label><input id="field2" type="password" value="xavixavi"></p>
+        <p><label for="field3">Country</label><select id="field3"><option>Spain</option><option>United Kingdom</option></select></p>
+    </div>
+    
+    <p><input type="submit" class="button red" value="Delete Account"></p>
+{% end %}	
