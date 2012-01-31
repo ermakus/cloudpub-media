@@ -9,11 +9,10 @@ import unicodedata
 import sys
 import urllib2
 from urlparse import urlsplit
-
 from tornado.options import define, options
 from tornado.escape import url_escape
-
 from loader import Session, Torrent
+import settings
 
 define("port", default=8888, help="run on the given port", type=int)
 define('host', default="0.0.0.0", help="The binded ip host")
@@ -25,13 +24,14 @@ class Application(tornado.web.Application):
         handlers = [
             (r"/",      HomeHandler),
             (r"/fetch", DownloadHandler),
+            (r"/ctrl",  ControlHandler),
         ]
         settings = dict(
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             static_path=os.path.join(os.path.dirname(__file__), "static"),
-            autoescape=None,
         )
         self.loader = Session()
+        self.loader.load()
         tornado.web.Application.__init__(self, handlers, **settings)
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -39,31 +39,29 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class HomeHandler(BaseHandler):
     def get(self):
-        self.render("index.html", torrents=self.application.loader.torrents)
+        self.render("index.html",
+                torrents=self.application.loader.torrents,
+                SERVER_ADDRESS=settings.SERVER_ADDRESS)
 
 def url2name(url):
     return os.path.basename(urlsplit(url)[2])
 
-def download(url, cookies, localFileName = None):
-    localName = url2name(url)
+def download(url, referer, cookies):
     opener = urllib2.build_opener()
+    opener.addheaders.append(('Referer', referer))
     opener.addheaders.append(('Cookie', cookies))
     r = opener.open(url)
+    localName = url2name(url)
     if r.info().has_key('Content-Disposition'):
         # If the response has Content-Disposition, we take file name from it
         localName = r.info()['Content-Disposition'].split('filename=')[1]
-        if localName[0] == '"' or localName[0] == "'":
-            localName = localName[1:-1]
     elif r.url != url: 
         # if we were redirected, the real file name we take from the final URL
         localName = url2name(r.url)
-    if localFileName: 
-        # we can force to save the file as specified name
-        localName = localFileName
-    f = open(localName, 'wb')
+    localName = settings.DOWNLOAD_DIR + "/" + localName.strip("\"';")
+    f = open( localName, 'wb')
     f.write(r.read())
     f.close()
-    print "Loaded", url, cookies
     return localName
 
 class DownloadHandler(BaseHandler):
@@ -71,15 +69,35 @@ class DownloadHandler(BaseHandler):
     def get(self):
         url = self.get_argument("torrent")
         cookies = self.get_argument("cookies")
-        filename = download( url, cookies, "test.torrent" )
+        referer = self.get_argument("ref")
+        filename = download( url, referer, cookies )
         self.application.loader.add( filename )
+        self.application.loader.save()
+        self.redirect( "/" )
+
+class ControlHandler(BaseHandler):
+
+    def get(self):
+        torrent = self.get_argument("torrent")
+        filename = self.get_argument("file")
+        command = self.get_argument("command","start")
+        torrent = self.application.loader[torrent]
+        if command == "start":
+            torrent.select( [filename] )    
+            torrent.start()
+        else:
+            torrent.stop()
         self.redirect( "/" )
 
 def main():
     tornado.options.parse_command_line()
-    http_server = tornado.httpserver.HTTPServer(Application())
+    app = Application()
+    http_server = tornado.httpserver.HTTPServer( app )
     http_server.listen(options.port, options.host)
-    tornado.ioloop.IOLoop.instance().start()
+    try:
+        tornado.ioloop.IOLoop.instance().start()
+    finally:
+        app.loader.stop()
 
 if __name__ == "__main__":
     main()

@@ -1,31 +1,37 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>iPad template</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"> 
-<link rel="apple-touch-icon" href="http://xaviesteve.com/pro/ipad-template/favicon-114.png">
-<meta name="apple-mobile-web-app-capable" content="yes"><!-- hide top bar in mobile safari -->
-<!-- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />translucent top bar "black-translucent -->
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-	<div id="wrap">
-		<div id="sidebar">
-			<div class="header">
-				<p class="title">iOS web app template</p>
-			</div><!--header-->
-			<div class="content">
-                {% block sidebar %}{% end %}
-			</div><!--content-->
-		</div><!--sidebar-->
-		<div id="main">
-			<div class="header">
-				<div class="left"><a href="./index_files/index.html">Back</a></div>
-				<h1 class="title">Section title</h1>
-				<div class="right"><a href="./index_files/index.html">Edit</a></div>
-			</div><!--header-->
-			<div class="content">
-                {% block content %}{% end %}
-			</div><!--content-->
-		</div><!--main-->
-	</div><!--wrap-->
-</body></html>
+<!DOCTYPE html">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Stream torrents to iOS device</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"> 
+        <link rel="apple-touch-icon" href="/static/l.png">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <link rel="stylesheet" href="/static/style.css">
+        <script>
+            setInterval( function() { document.location.reload(); }, 10000 );
+        </script>
+    </head>
+    <body>
+        <div id="wrap">
+            <div id="sidebar">
+                <div class="header">
+                    <p class="title">History</p>
+                </div><!--header-->
+                <div class="content">
+                    {% block sidebar %}{% end %}
+                </div><!--content-->
+            </div><!--sidebar-->
+            <div id="main">
+                <div class="header">
+                    <div class="left"><a href="#torrents">Files</a></div>
+                    <h1  class="title">Torrents</h1>
+                    <div class="right"><a href="#help">Help</a></div>
+                </div><!--header-->
+                <div class="content">
+                    {% block content %}{% end %}
+                </div><!--content-->
+            </div><!--main-->
+        </div><!--wrap-->
+    </body>
+</html>

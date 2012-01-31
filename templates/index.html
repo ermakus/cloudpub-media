@@ -2,59 +2,58 @@
 
 {% block sidebar %}
     <ul class="nav">
-        <li><a href='javascript:{% include "bookmarklet.js" %}'><span class="ico msg"></span>Download Torrent</a></li>
         {% for torrent in torrents %}
-        <li><a href="#{{ torrent.path }}" class="active"><span class="ico msg"></span>{{ torrent.path }}</a></li>
+        <li><a href="#torrent-{{ torrent.index }}" class="active"><span class="file">{{ torrent.getFilename() }}</span></a></li>
         {% end %}
     </ul>
 {% end %}
 		
 {% block content %}
-    <h2 class="title">Heading first</h2>
+    <div id="torrents">
+        {% for torrent in torrents %}
+        <h2 id="torrent-{{ torrent.index }}" class="title">{{ torrent.getFilename() }}</h2>
+        <div class="box-white">
+            <form action="/ctrl">
+            <input type="hidden" name="torrent" value="{{ torrent.path }}">
+                {% for stream in torrent.streams %}
+                <p>
+                    {% if stream.isAvailable() %}<a href="http://{{ SERVER_ADDRESS }}/{{ stream.path }}.stream/stream.m3u8" target="new">{% end %}
+                    <input id="file-{{ torrent.index}}-{{ stream.index }}" type="radio" name="file" value="{{ stream.path }}" checked="{{ stream.selected }}">
+                    <label for="file-{{ torrent.index }}-{{ stream.index }}">{{ stream.getFilename() }}</label>
+                    {% if stream.isAvailable() %}<span>Play<span class="arrow">&gt;</span></span></a>{% end %}
+                </p>
+                {% end %}
+                {% if torrent.started %}
+                <input type="hidden" name="command" value="stop">
+                <p><input type="submit" class="button green" value="Pause"></p>
+                {% else %}
+                <input type="hidden" name="command" value="start"/>
+                <p><input type="submit" class="button red" value="Download And Stream"></p>
+                {% end %} 
+            </form>
+        </div>
+        {% end %} 
+    </div>
 
-    <div class="box-white">
-        <p>Lorem ipsum <span class="detail">Details here</span><span>Dolor</span></p>
-    </div><!--box-white-->
-
-    <h2 class="title2">Heading second</h2>
-    
-    <p>This is a normal paragraph to add any text you like.</p>
-
-    <div class="box-white">
-        <p>Parameter <span>Value</span></p>
-        <p><a href="./index_files/index.html">Clickable row<span>Click me <span class="arrow">&gt;</span></span></a></p>
-        <p>Foo <span>Bar</span></p>
-        <p>Lorem ipsum <span><a href="./index_files/index.html">Click only this</a></span></p>
-    </div><!--box-white-->
-    
-    
-    <table>
-        <thead>
-            <tr><th>Table heading</th><th>Tweets</th><th>Following</th><th>Followers</th></tr>
-        </thead>
-        <tbody>
-            <tr><td><a href="./index_files/index.html">@xaviesteve</a></td><td><a href="./index_files/index.html">Click</a></td><td>131</td><td>195</td></tr>
-            <tr><td>@xaviesteve</td><td>622</td><td><a href="./index_files/index.html">Click</a></td><td>195</td></tr>
-            <tr><td>@xaviesteve</td><td>622</td><td>131</td><td><a href="./index_files/index.html">Click</a></td></tr>
-        </tbody>
-    </table>
-    
-    <p class="note">You can follow me on Twitter for updates on this template at <a href="http://www.twitter.com/xaviesteve">@xaviesteve</a>.</p>
-            
-    <h2 class="title">Heading first</h2>
-
-    <div class="box-white">
-        <p class="center">Centered text in a white box</p>
-    </div><!--box-white-->
-    
-    <h2 class="title2">Account details</h2>
-    <p>Me got forms too:</p>
-    
-    <div class="box-white">
-        <p><label for="field1">Apple ID</label><input id="field1" type="text" value="xavi@example.com"></p>
-        <p><label for="field2">Password</label><input id="field2" type="password" value="xavixavi"></p>
-        <p><label for="field3">Country</label><select id="field3"><option>Spain</option><option>United Kingdom</option></select></p>
+    <div id="help">
+    <h2 class="title">How to install bookmarklet</h2>
+    <div class="box-white-help">
+        <p>
+            <a href='#javascript:{% include "bookmarklet.js" %}' onclick='document.title="Download Torrent"'>1. Tap here</a>
+            <span class="detail">this will change page title and append bookmarklet into address bar</span>
+        </p>
+            <p>2. Tap the '+' button at the bottom of the screen, then select <strong>Add Bookmark</strong></p>
+            <p>3. Tap <strong>Save</strong></p>
+            <p>4. Tap the Bookmarks button at the bottom of the screen.</p>
+            <p>5. Locate just created <em>Download Torrent</em> bookmark in the list.</p>
+            <p>6. Tap <strong>Edit</strong> and then tap on the bookmark.</p>
+            <p>7. Tap in the second field (it begins with "http:").<br/>
+                <span class="detail">You want to edit the beginning of this text, so tap and drag the loupe all the way to the left.</span>
+            </p>
+            <p>8. Place the editing point between the "#" and the "j" then delete all to the beginning of the line.<br/>
+                <span class="detail">When you are done, your bookmark should begin from 'javascript:' string</span>
+            </p>
+    </div>
     </div>
     
-    <p><input type="submit" class="button red" value="Delete Account"></p>
 {% end %}	
