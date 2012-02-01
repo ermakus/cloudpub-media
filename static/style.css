@@ -22,7 +22,6 @@ html, #wrap {background:#d8dae0;font: 16px normal Helvetica,sans-serif;}
 border-top:1px solid #015DE6;color:#fff;text-shadow:0 1px 1px #333;}
 #sidebar .content .nav a span {color:#4C556C;float:right;font-weight:normal;}
 #sidebar .content .nav a.active span {color:#fff;}
-#sidebar .content .nav a .file  { overflow: hidden; max-width: 100%; text-overflow: ellipsis; float: left; }
 #sidebar .content .nav a .ico {background:#999;border-radius:5px;display: inline-block;float: none;height: 28px;margin: -5px 10px 0 0;vertical-align: middle;width: 28px;}
 #sidebar .content .nav a .info {background: #E20000;border: 1px solid #C00;border-radius: 100%;box-shadow:0 1px 1px #999;color: white;font-size: 12px;display: block;padding: 1px 5px;}
 #sidebar .content p {color:#4C536C;font-size:14px;padding:10px;text-shadow:0 1px 1px #ccc;}
@@ -53,23 +52,47 @@ position: fixed;left: 310px;top: 9px;font-size: 12px;color: white;padding: 5px 8
 .box-white-help p span.detail {color: #999;float: none;font-size:12px;margin-left:5px;}
 /* Box white */
 .box-white {clear: both; background:#fff;border:1px solid #B4B7BB;border-radius:10px;}
-.box-white p {color:#000;border-bottom:1px solid #B4B7BB;font-weight:bold;margin:0;padding:10px;height: 20px; }
+.box-white p {color:#000;border-bottom:1px solid #B4B7BB;font-weight:bold;margin:0;padding:10px;height: 20px; clear: right; }
 .box-white p:last-child {border-bottom:none;}
-.box-white p span {color:#4C556C;float:right;font-weight:normal;}
-.box-white p span.detail {color: #999;float: none;font-size:12px;margin-left:5px;}
-.box-white p span.arrow {color: #666;float: none;font-family: monospace;font-weight: bold;margin-left: 5px;text-shadow: 0 1px 1px #666;}
 
+span.ready  { width: 50px; color:#4C556C; float:right; font-weight:normal; }
+span.detail { color: #999;float: none;font-size:12px;margin-left:5px;}
+span.arrow  { color: #666;float: none;font-family: monospace;font-weight: bold;margin-left: 5px;text-shadow: 0 1px 1px #666;}
+span.filename {
+    display: block;
+}
 /* Links */
 a {color:#0085d5;text-decoration:none;}
 label { 
     display: block; 
-    float: left; 
-    width: 70%; 
+    margin-left: 20px;
+    overflow: hidden;
     padding: 2px;
 }
 
+.box-white p label span {
+    text-align: left;
+}
+
 input[type=radio] {
+    width: 20px;
     float: left;
+}
+
+.loading {
+    float: right;
+}
+
+.file, label, h1, h2  { 
+    display: block;
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    white-space: nowrap;
+}
+
+.file {
+    float: left; 
+    width: 100%; 
 }
 
 .button {
@@ -109,20 +132,20 @@ input[type=radio] {
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#bfd255), color-stop(50%,#8eb92a), color-stop(51%,#72aa00), color-stop(100%,#9ecb2d)); /* webkit */
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#bfd255', endColorstr='#9ecb2d',GradientType=0 ); /* ie */
 }
-.clear {
-clear: both;
-}
 
+.clear {
+    clear: both;
+}
 
 #help, #torrents {
-padding: 0;
-margin: 0;
-padding-bottom: 32px;
+    padding: 0;
+    margin: 0;
+    padding-bottom: 32px;
 }
 
-label, h1, h2 {
-overflow: hidden;
-text-overflow: ellipsis;
+.filename, h1, h2 {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 h1, h2 { clear: both; }

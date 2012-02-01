@@ -19,6 +19,9 @@
                     $('#torrents').hide();
                     $('#help').show();
                 });
+                if( $('.loading').length ) {
+                    setTimeout( function() { window.location.reload(); }, 10000 );
+                }
             });
         </script>
     </head>

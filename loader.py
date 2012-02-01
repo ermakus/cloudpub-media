@@ -235,10 +235,8 @@ class Torrent:
             self.streams.append(stream)
             print >> sys.stderr, "File %s offset %d start %s" % (stream.path, stream.piece, stream.start) 
 
-        if stream:
-            self.select( [stream.path] )
-        else:
-            self.prepare()
+        if len(self.streams):
+            self.select( [self.streams[0]] )
 
     def getFilename(self):
         return os.path.basename( self.path )

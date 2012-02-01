@@ -14,14 +14,19 @@
         <form action="/ctrl">
             <h2 id="torrent-{{ torrent.index }}" class="title">{{ torrent.getFilename() }}</h2>
             <input type="hidden" name="torrent" value="{{ torrent.path }}">
+            {% if len(torrent.streams) > 0 %}
             <div class="box-white">
-                {% for stream in torrent.streams %}
+               {% for stream in torrent.streams %}
                 <p>
-                    {% if stream.isAvailable() %}<a href="http://{{ SERVER_ADDRESS }}/{{ stream.path }}.stream/stream.m3u8" target="new">{% end %}
+                    {% if stream.isAvailable() %}<a href="http://{{ SERVER_ADDRESS }}/{{ stream.getFilename() }}.stream/stream.m3u8" target="new">{% end %}
                     <input id="file-{{ torrent.index}}-{{ stream.index }}" type="radio" name="file" value="{{ stream.path }}" {% if stream.selected %}checked{% end %}>
-                    <label for="file-{{ torrent.index }}-{{ stream.index }}">{{ stream.getFilename() }}</label>
-                    {% if stream.isAvailable() %}<span>Play<span class="arrow">&gt;</span></span></a>{% end %}
-                </p>
+                    <label for="file-{{ torrent.index }}-{{ stream.index }}">
+                        {% if stream.isAvailable() %}<span class="ready">Play<span class="arrow">&gt;</span></span>{% end %}
+                        {% if torrent.started and stream.selected and not stream.isAvailable() %}<img class="loading" src="/static/loading.gif">{% end %}
+                        <span class="filename">{{ stream.getFilename() }}</span>
+                    </label>
+                    {% if stream.isAvailable() %}</a>{% end %}
+                 </p>
                 {% end %}
             </div>
             {% if torrent.started %}
@@ -31,6 +36,14 @@
             <input type="hidden" name="command" value="start"/>
             <input type="submit" class="button green start" value="Play">
             {% end %} 
+            {% else %}
+            <div class="box-white-help">
+                <p>
+                    Sorry, this torent has no files of supported format<br>
+                    <span class="detail">Only avi, mkv, ogg, wmv, mov, vob, 3gp and flv files is supported</span>
+                </p>
+            </div>
+            {% end %}
             <a href="/del?torrent={{ torrent.path }}" class="button red delete">Delete</a>
         </form>
         {% end %} 
