@@ -3,7 +3,7 @@
 {% block sidebar %}
     <ul class="nav">
         {% for torrent in torrents %}
-        <li><a href="#torrent-{{ torrent.index }}" class="active"><span class="file">{{ torrent.getFilename() }}</span></a></li>
+        <li><a href="#torrent-{{ torrent.index }}" class="showTorrents"><span class="file">{{ torrent.getFilename() }}</span></a></li>
         {% end %}
     </ul>
 {% end %}
@@ -11,49 +11,80 @@
 {% block content %}
     <div id="torrents">
         {% for torrent in torrents %}
-        <h2 id="torrent-{{ torrent.index }}" class="title">{{ torrent.getFilename() }}</h2>
-        <div class="box-white">
-            <form action="/ctrl">
+        <form action="/ctrl">
+            <h2 id="torrent-{{ torrent.index }}" class="title">{{ torrent.getFilename() }}</h2>
             <input type="hidden" name="torrent" value="{{ torrent.path }}">
+            <div class="box-white">
                 {% for stream in torrent.streams %}
                 <p>
                     {% if stream.isAvailable() %}<a href="http://{{ SERVER_ADDRESS }}/{{ stream.path }}.stream/stream.m3u8" target="new">{% end %}
-                    <input id="file-{{ torrent.index}}-{{ stream.index }}" type="radio" name="file" value="{{ stream.path }}" checked="{{ stream.selected }}">
+                    <input id="file-{{ torrent.index}}-{{ stream.index }}" type="radio" name="file" value="{{ stream.path }}" {% if stream.selected %}checked{% end %}>
                     <label for="file-{{ torrent.index }}-{{ stream.index }}">{{ stream.getFilename() }}</label>
                     {% if stream.isAvailable() %}<span>Play<span class="arrow">&gt;</span></span></a>{% end %}
                 </p>
                 {% end %}
-                {% if torrent.started %}
-                <input type="hidden" name="command" value="stop">
-                <p><input type="submit" class="button green" value="Pause"></p>
-                {% else %}
-                <input type="hidden" name="command" value="start"/>
-                <p><input type="submit" class="button red" value="Download And Stream"></p>
-                {% end %} 
-            </form>
-        </div>
+            </div>
+            {% if torrent.started %}
+            <input type="hidden" name="command" value="stop">
+            <input type="submit" class="button red stop" value="Stop">
+            {% else %}
+            <input type="hidden" name="command" value="start"/>
+            <input type="submit" class="button green start" value="Play">
+            {% end %} 
+            <a href="/del?torrent={{ torrent.path }}" class="button red delete">Delete</a>
+        </form>
         {% end %} 
     </div>
 
     <div id="help">
-    <h2 class="title">How to install bookmarklet</h2>
-    <div class="box-white-help">
-        <p>
-            <a href='#javascript:{% include "bookmarklet.js" %}' onclick='document.title="Download Torrent"'>1. Tap here</a>
-            <span class="detail">this will change page title and append bookmarklet into address bar</span>
-        </p>
-            <p>2. Tap the '+' button at the bottom of the screen, then select <strong>Add Bookmark</strong></p>
-            <p>3. Tap <strong>Save</strong></p>
-            <p>4. Tap the Bookmarks button at the bottom of the screen.</p>
-            <p>5. Locate just created <em>Download Torrent</em> bookmark in the list.</p>
-            <p>6. Tap <strong>Edit</strong> and then tap on the bookmark.</p>
-            <p>7. Tap in the second field (it begins with "http:").<br/>
-                <span class="detail">You want to edit the beginning of this text, so tap and drag the loupe all the way to the left.</span>
+        <h2 class="title">Step 1: Install bookmarklet</h2>
+        <h2 class="title">On Apple devices</h2>
+        <div class="box-white-help">
+                <p>
+                    <a href='#javascript:{% include "bookmarklet.js" %}' onclick='document.title="Download Torrent"'>1. Tap here</a>
+                    <span class="detail">this will change page title and append bookmarklet into address bar</span>
+                </p>
+                <p>2. Tap the '+' button at the bottom of the screen, then select <strong>Add Bookmark</strong></p>
+                <p>3. Tap <strong>Save</strong></p>
+                <p>4. Tap the Bookmarks button at the bottom of the screen.</p>
+                <p>5. Locate just created <em>Download Torrent</em> bookmark in the list.</p>
+                <p>6. Tap <strong>Edit</strong> and then tap on the bookmark.</p>
+                <p>7. Tap in the second field (it begins with "http:").<br/>
+                    <span class="detail">You want to edit the beginning of this text, so tap and drag the loupe all the way to the left.</span>
+                </p>
+                <p>8. Place the editing point between the "#" and the "j" then delete all to the beginning of the line.<br/>
+                    <span class="detail">When you are done, your bookmark should begin from 'javascript:' string</span>
+                </p>
+        </div>
+        <h2 class="title">On PC</h2>
+        <div class="box-white-help">
+                <p>
+                    Add this link: <a href='javascript:{% include "bookmarklet.js" %}'>Download Torrent</a> to bookmarks.<br>
+                    <span class="detail">drag and drop to bookmarks panel or use right click menu</span>
+                </p>
+        </div> 
+        <h2 class="title">Step 2: Download Torrent</h2>
+        <div class="box-white-help">
+            <p>
+                1. Enter tracker site and activate bookmarklet<br>
+                <span class="detail">this will append download icon to each torrent link</span>
             </p>
-            <p>8. Place the editing point between the "#" and the "j" then delete all to the beginning of the line.<br/>
-                <span class="detail">When you are done, your bookmark should begin from 'javascript:' string</span>
+            <p>
+                2. Click on <img src="/static/l.png" width="16" height="16"> near selected torrent file.<br>
+                <span class="detail">the torrent should be opened in the this app</span>
             </p>
-    </div>
+            <p>
+                3. Select file to play and click Start button
+            </p>
+            <p>
+                4. Wait until "Play" link displayed<br>
+                <span class="detail">this will take 1-2 minutes usually</span>
+            </p>
+            <p>
+                5. Click on the "Play" and enjoy<br>
+                <span class="detail">Please note: Until movie conversion in porogress the stream in "Live" mode, so you probably need to rewind it backward to start</span>
+            </p>
+        </div> 
     </div>
     
 {% end %}	

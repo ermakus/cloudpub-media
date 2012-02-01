@@ -8,8 +8,18 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <link rel="stylesheet" href="/static/style.css">
+        <script src="/static/jquery-1.6.2.min.js"></script>
         <script>
-            setInterval( function() { document.location.reload(); }, 10000 );
+            $(document).ready(function() {
+                $('.showTorrents').click( function() {
+                    $('#torrents').show();
+                    $('#help').hide();
+                } ).click();
+                $('.showHelp').click( function() {
+                    $('#torrents').hide();
+                    $('#help').show();
+                });
+            });
         </script>
     </head>
     <body>
@@ -24,9 +34,9 @@
             </div><!--sidebar-->
             <div id="main">
                 <div class="header">
-                    <div class="left"><a href="#torrents">Files</a></div>
+                    <div class="left"><a class="showTorrents" href="#">Files</a></div>
                     <h1  class="title">Torrents</h1>
-                    <div class="right"><a href="#help">Help</a></div>
+                    <div class="right"><a class="showHelp" href="#">Help</a></div>
                 </div><!--header-->
                 <div class="content">
                     {% block content %}{% end %}

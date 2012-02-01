@@ -7,6 +7,7 @@ import re
 import threading
 import ConfigParser
 import os
+import shutil
 from settings import SERVER_ADDRESS, PLAYER_ADDRESS, BASE_DIR, DOWNLOAD_DIR
 
 # Event pattern
@@ -73,7 +74,7 @@ class Stream:
         if not self.worker:
             self.worker = Popen([ BASE_DIR + '/encoder-vlc', self.path], stdin=PIPE, cwd=DOWNLOAD_DIR)
         if not self.source:
-            self.source = open( DOWNLOAD_DIR + '/' + self.path,'r')
+            self.source = open( self.path,'r')
 
         self.source.seek(offset)
         data = self.source.read(size)
@@ -119,6 +120,16 @@ class Stream:
         self.closed = True
         self.current = 0
 
+    def delete(self):
+        try:
+            os.remove( self.path )
+        except OSError as e:
+            print >> sys.stderr, "Stream file %s not found" % (self.path) 
+        try:
+            shutil.rmtree( self.path + ".stream" )
+        except OSError as e:
+            print >> sys.stderr, "Stream folder %s.stream not found" % (self.path) 
+
 # Torrent sequental loader
 class Session:
 
@@ -136,7 +147,7 @@ class Session:
         torrent = Torrent(self, path)
         torrent.index = self.count
         self.count += 1
-        self.torrents += [torrent]
+        self.torrents.append(torrent)
         return torrent
 
     # Get torrent by filename
@@ -170,9 +181,17 @@ class Session:
         except ConfigParser.NoSectionError:
             pass
 
+class TorrentThread(threading.Thread):
+
+    def __init__(self, torrent):
+        threading.Thread.__init__(self)
+        self.torrent = torrent
+
+    def run(self):
+        self.torrent.run()
 
 # Torrent wrapper
-class Torrent(threading.Thread):
+class Torrent:
     
     # Load torrent
     def __init__(self, session, path):
@@ -182,6 +201,7 @@ class Torrent(threading.Thread):
         self.session  = session
         self.ses = session.ses
         self.info = lt.torrent_info(path)
+        self.thread = None
 
         self.handle = self.ses.add_torrent({
             'ti': self.info,
@@ -207,17 +227,32 @@ class Torrent(threading.Thread):
             preq   = self.info.map_file(index, 0, 0)
             stream = Stream(self)
             stream.index = index
-            stream.selected = (index == 0)
             stream.piece = preq.piece
             stream.start = preq.start
             stream.size  = entry.size
-            stream.path  = entry.path
+            stream.path  = DOWNLOAD_DIR + "/" + entry.path
             stream.onStart += self.stream_ready
-            self.streams += [stream]
+            self.streams.append(stream)
             print >> sys.stderr, "File %s offset %d start %s" % (stream.path, stream.piece, stream.start) 
+
+        if stream:
+            self.select( [stream.path] )
+        else:
+            self.prepare()
 
     def getFilename(self):
         return os.path.basename( self.path )
+
+    def delete(self):
+        for stream in self.streams:
+            stream.delete()
+        try:
+            os.remove( self.path )
+        except OSError as e:
+            print >> sys.stderr, "File %s not found" % (self.path) 
+        finally:
+            self.ses.remove_torrent( self.handle, lt.options_t.delete_files )
+            self.session.torrents.remove(self)
     
     # Return stream by path
     def __getitem__(self, path):
@@ -264,7 +299,8 @@ class Torrent(threading.Thread):
 
     def select(self, streams):
         for stream in self.streams:
-            stream.selected = stream.path in streams
+            stream.selected = (stream.path in streams)
+            self.prepare()
 
     # Prepare selected streams for download
     def prepare(self):
@@ -290,7 +326,6 @@ class Torrent(threading.Thread):
     def run(self):
         print >> sys.stderr, "Starting %s\n" % self.handle.name()
 
-        self.prepare()
 
         self.handle.resume()
         self.started = True
@@ -307,6 +342,7 @@ class Torrent(threading.Thread):
             time.sleep(1)
         
         self.pump()
+        self.handle.pause()
 
         # close streams
         for stream in self.streams:
@@ -317,13 +353,15 @@ class Torrent(threading.Thread):
         print >> sys.stderr, "%s complete\n" % self.handle.name()
 
     def start(self):
-        threading.Thread.__init__(self)
-        threading.Thread.start(self)
+        if not self.thread:
+            self.thread = TorrentThread( self )
+            self.thread.start()
 
     def stop(self):
-        if self.isAlive():
+        if self.thread and self.thread.isAlive():
             self.quit = True
-            self.join()
+            self.thread.join()
+        self.thread = None
 
 if __name__ == '__main__':
     session = Session()

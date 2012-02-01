@@ -25,6 +25,7 @@ class Application(tornado.web.Application):
             (r"/",      HomeHandler),
             (r"/fetch", DownloadHandler),
             (r"/ctrl",  ControlHandler),
+            (r"/del",   DeleteHandler),
         ]
         settings = dict(
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
@@ -87,6 +88,16 @@ class ControlHandler(BaseHandler):
             torrent.start()
         else:
             torrent.stop()
+        self.redirect( "/" )
+
+class DeleteHandler(BaseHandler):
+
+    def get(self):
+        torrent = self.get_argument("torrent")
+        torrent = self.application.loader[torrent]
+        torrent.stop()
+        torrent.delete()
+        self.application.loader.save()
         self.redirect( "/" )
 
 def main():
