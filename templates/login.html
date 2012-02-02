@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block header %}
+<h1  class="title">Login or register</h1>
+{% end %} 
+	
+{% block content %}
+    <h1 class="error">{% for key in errors %}<p>{{ errors[key] }}</p>{% end %}</h1>
+    <div>
+        <form action="/login" method="post">
+            <h1 class="title">Login</h2>
+            <div class="box-white-help">
+                <p>
+                    <input type="email" name="username" title="E-Mail" placeholder="E-Mail" value="{{ username }}">
+                </p>
+                <p>
+                    <input type="password" name="password" title="Password" placeholder="Password">
+                </p>
+            </div>
+            <input type="submit" class="button green submit" value="Login">
+        </form>
+    </div>
+
+    <div>
+        <form action="/register" method="post">
+            <h1 class="title">Register</h2>
+            <div class="box-white-help">
+                <p>
+                    <input type="email" name="username" placeholder="E-Mail" title="E-Mail" value="{{ username }}">
+                </p>
+                <p>
+                    <input type="password" name="password" title="Password" placeholder="Password">
+                </p>
+            </div>
+            <input type="submit" class="button green submit" value="Register">
+        </form>
+    </div>
+{% end %}	

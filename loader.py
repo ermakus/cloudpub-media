@@ -59,6 +59,8 @@ class Stream:
         self.source  = None
         # Stream closed flag
         self.closed  = False
+        # Stream converted flag
+        self.done = False
         # On conversion started hook
         self.onStart = EventHook()
    
@@ -67,7 +69,7 @@ class Stream:
         return self.onStart.count > 0
 
     def getFilename(self):
-        return os.path.basename( self.path )
+        return self.path[len(DOWNLOAD_DIR)+1:]
  
     # Send piece of downloaded file to convertor pipe
     def feed(self, offset, size):
@@ -98,9 +100,9 @@ class Stream:
                 # Only handle file of this stream
                 if fl.file_index == self.index:
                     # Feed block to convertor
-                    self.feed( fl.offset, fl.size )
                     self.current += fl.size
                     self.piece   += 1
+                    self.feed( fl.offset, fl.size )
                     print >> sys.stderr, "%s: piece %d len %d\n" % (self.path, self.current, fl.size)
 
     # Close opened handles
@@ -118,6 +120,8 @@ class Stream:
                 pass
             self.source = None
         self.closed = True
+        if self.current == self.size:
+            self.done = True
         self.current = 0
 
     def delete(self):
@@ -235,8 +239,9 @@ class Torrent:
             self.streams.append(stream)
             print >> sys.stderr, "File %s offset %d start %s" % (stream.path, stream.piece, stream.start) 
 
-        if len(self.streams):
-            self.select( [self.streams[0]] )
+        if len(self.streams) > 0:
+            self.streams[0].selected = True
+            self.prepare()
 
     def getFilename(self):
         return os.path.basename( self.path )

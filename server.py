@@ -12,6 +12,7 @@ from urlparse import urlsplit
 from tornado.options import define, options
 from tornado.escape import url_escape
 from loader import Session, Torrent
+from validator import ValidationMixin
 import settings
 
 define("port", default=8888, help="run on the given port", type=int)
@@ -22,24 +23,80 @@ PER_PAGE=10
 class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r"/",      HomeHandler),
-            (r"/fetch", DownloadHandler),
-            (r"/ctrl",  ControlHandler),
-            (r"/del",   DeleteHandler),
+            (r"/",         HomeHandler),
+            (r"/login",    LoginHandler),
+            (r"/logout",   LogoutHandler),
+            (r"/register", RegisterHandler),
+            (r"/fetch",    DownloadHandler),
+            (r"/ctrl",     ControlHandler),
+            (r"/del",      DeleteHandler),
         ]
         settings = dict(
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             static_path=os.path.join(os.path.dirname(__file__), "static"),
+            cookie_secret='LHD(*#EHKJDFBSD(*F#RGM>NJK',
         )
         self.loader = Session()
         self.loader.load()
         tornado.web.Application.__init__(self, handlers, **settings)
 
-class BaseHandler(tornado.web.RequestHandler):
-    pass
+class BaseHandler(tornado.web.RequestHandler, ValidationMixin):
+    def get_login_url(self):
+        return u"/login"
+
+    def get_current_user(self):
+        user_json = self.get_secure_cookie("user")
+        if user_json:
+            return tornado.escape.json_decode(user_json)
+        else:
+            return None
+
+    def set_current_user(self, user):
+        if user:
+            self.set_secure_cookie("user", tornado.escape.json_encode(user))
+        else:
+            self.clear_cookie("user")
+
+class LoginHandler(BaseHandler):
+
+    def get(self):
+        self.render("login.html", next=self.get_argument("next","/"), errors={}, username="")
+
+    def post(self):
+        username = self.valid("username", ValidationMixin.EMAIL)
+        password = self.valid("password")
+
+        if len(self.errors) > 0:
+            self.render("login.html", next=self.get_argument("next","/"), errors=self.errors, username=username)
+
+        self.set_current_user(username)
+        self.redirect(self.get_argument("next", u"/"))
+
+
+class RegisterHandler(BaseHandler):
+
+    def post(self):
+        username = self.valid("username", ValidationMixin.EMAIL)
+        password = self.valid("password")
+
+        if len(self.errors) > 0:
+            self.render("login.html", next=self.get_argument("next","/"), errors=self.errors, username=username)
+
+        self.set_current_user(username)
+        self.redirect(self.get_argument("next", u"/"))
+
+class LogoutHandler(BaseHandler):
+
+    def get(self):
+        self.clear_cookie("user")
+        self.redirect( self.get_login_url() )
+
 
 class HomeHandler(BaseHandler):
     def get(self):
+        if not self.get_current_user():
+            self.redirect( self.get_login_url() )
+
         self.render("index.html",
                 torrents=self.application.loader.torrents,
                 SERVER_ADDRESS=settings.SERVER_ADDRESS)

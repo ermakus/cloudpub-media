@@ -74,9 +74,20 @@ label {
     text-align: left;
 }
 
+input {
+    border: 0;
+    -webkit-appearance: none;
+    width: 100%;
+}
+
 input[type=radio] {
     width: 20px;
     float: left;
+}
+
+.submit {
+    float: right;
+    width: 50%;
 }
 
 .loading {

@@ -11,13 +11,13 @@
         <script src="/static/jquery-1.6.2.min.js"></script>
         <script>
             $(document).ready(function() {
-                $('.showTorrents').click( function() {
-                    $('#torrents').show();
-                    $('#help').hide();
+                $('.btn1').click( function() {
+                    $('#panel1').show();
+                    $('#panel2').hide();
                 } ).click();
-                $('.showHelp').click( function() {
-                    $('#torrents').hide();
-                    $('#help').show();
+                $('.btn2').click( function() {
+                    $('#panel1').hide();
+                    $('#panel2').show();
                 });
                 if( $('.loading').length ) {
                     setTimeout( function() { window.location.reload(); }, 10000 );
@@ -29,7 +29,7 @@
         <div id="wrap">
             <div id="sidebar">
                 <div class="header">
-                    <p class="title">History</p>
+                    <p class="title">Torrents</p>
                 </div><!--header-->
                 <div class="content">
                     {% block sidebar %}{% end %}
@@ -37,13 +37,11 @@
             </div><!--sidebar-->
             <div id="main">
                 <div class="header">
-                    <div class="left"><a class="showTorrents" href="#">Files</a></div>
-                    <h1  class="title">Torrents</h1>
-                    <div class="right"><a class="showHelp" href="#">Help</a></div>
-                </div><!--header-->
+                    {% block header %}{% end %} 
+                </div>
                 <div class="content">
                     {% block content %}{% end %}
-                </div><!--content-->
+                </div>
             </div><!--main-->
         </div><!--wrap-->
     </body>

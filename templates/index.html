@@ -3,13 +3,19 @@
 {% block sidebar %}
     <ul class="nav">
         {% for torrent in torrents %}
-        <li><a href="#torrent-{{ torrent.index }}" class="showTorrents"><span class="file">{{ torrent.getFilename() }}</span></a></li>
+        <li><a href="#torrent-{{ torrent.index }}" class="btn1"><span class="file">{{ torrent.getFilename() }}</span></a></li>
         {% end %}
     </ul>
 {% end %}
+
+{% block header %}
+<div class="left"><a class="btn1" href="#">Files</a></div>
+<h1  class="title">Streaming</h1>
+<div class="right"><a class="btn2" href="#">Help</a></div>
+{% end %} 
 		
 {% block content %}
-    <div id="torrents">
+    <div id="panel1">
         {% for torrent in torrents %}
         <form action="/ctrl">
             <h2 id="torrent-{{ torrent.index }}" class="title">{{ torrent.getFilename() }}</h2>
@@ -18,16 +24,20 @@
             <div class="box-white">
                {% for stream in torrent.streams %}
                 <p>
-                    {% if stream.isAvailable() %}<a href="http://{{ SERVER_ADDRESS }}/{{ stream.getFilename() }}.stream/stream.m3u8" target="new">{% end %}
                     <input id="file-{{ torrent.index}}-{{ stream.index }}" type="radio" name="file" value="{{ stream.path }}" {% if stream.selected %}checked{% end %}>
                     <label for="file-{{ torrent.index }}-{{ stream.index }}">
-                        {% if stream.isAvailable() %}<span class="ready">Play<span class="arrow">&gt;</span></span>{% end %}
-                        {% if torrent.started and stream.selected and not stream.isAvailable() %}<img class="loading" src="/static/loading.gif">{% end %}
+                        {% if torrent.started and stream.selected and not stream.isAvailable() %}
+                        <img class="loading" src="/static/loading.gif">
+                        {% end %}
+                        {% if stream.isAvailable() %}
+                        <a href="http://{{ SERVER_ADDRESS }}/{{ stream.getFilename() }}.stream/stream.m3u8" target="new">
+                        <span class="ready">Play<span class="arrow">&gt;</span></span>
+                        {% end %}
                         <span class="filename">{{ stream.getFilename() }}</span>
+                        {% if stream.isAvailable() %}</a>{% end %}
                     </label>
-                    {% if stream.isAvailable() %}</a>{% end %}
                  </p>
-                {% end %}
+               {% end %}
             </div>
             {% if torrent.started %}
             <input type="hidden" name="command" value="stop">
@@ -49,7 +59,7 @@
         {% end %} 
     </div>
 
-    <div id="help">
+    <div id="panel2">
         <h2 class="title">Step 1: Install bookmarklet</h2>
         <h2 class="title">On Apple devices</h2>
         <div class="box-white-help">
