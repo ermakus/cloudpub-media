@@ -52,18 +52,23 @@ class Stream:
         self.torrent = torrent
         # True if stream is selected for download
         self.selected = False
-        # Current piece
-        self.current = 0
+        # converted piece
+        self.downloaded = 0
+        # Index of first piece in all image
+        self.piece = 0
+        # Number of converted bytes
+        self.converted = 0
         # Convertor process handle
         self.worker  = None
         # Source file handle
         self.source  = None
         # Stream closed flag
         self.closed  = False
-        # Stream converted flag
-        self.done = False
+        # Complete flag
+        self.complete = False
         # On conversion started hook
         self.onStart = EventHook()
+
    
     # True if decoded data is available
     def isAvailable(self):
@@ -76,20 +81,29 @@ class Stream:
     def getFilename(self):
         return self.path[len(DOWNLOAD_DIR)+1:]
 
+    def isComplete(self):
+        return self.closed
+
     def getDownloaded(self):
-        s = self.torrent.handle.status()
-        return (s.num_pieces / self.size) * 100
+        s = self.torrent.info
+        pieces = self.torrent.handle.status().pieces
+        downloaded = 0
+        for index in xrange( self.piece, self.piece + min( int(self.size / s.piece_length()), len(pieces) )):
+            if pieces[ index ]:
+                downloaded+=1
+        return round((downloaded * s.piece_length() / self.size) * 100.0)
 
     def getConverted(self):
-        s = self.torrent.handle.status()
-        return (self.current / self.size) * 100
- 
+        s = self.torrent.info
+        return round((self.converted * s.piece_length() / self.size) * 100.0)
+
     # Send piece of downloaded file to convertor pipe
     def feed(self, offset, size):
         if not self.worker:
             self.worker = Popen([ BASE_DIR + '/encoder-' + ENCODER, self.path], stdin=PIPE, cwd=DOWNLOAD_DIR)
         if not self.source:
             self.source = open( self.path,'r')
+            self.closed = False
 
         self.source.seek(offset)
         data = self.source.read(size)
@@ -101,22 +115,26 @@ class Stream:
         # Ignore closed or unselected streams
         if self.closed or not self.selected:
             return
-        # Handle downloaded pieces 
+        # Get torent status
         s = self.torrent.handle.status()
-        while( (self.current < self.size) and s.pieces[ self.piece ] ):
-            # Break if torrent stopped
+        # Step over all available pieces from last converted
+        piece_len = self.torrent.info.piece_length()
+        piece = self.piece + self.converted
+        piece_size = self.torrent.info.piece_size( piece  )
+        size = int(self.size / piece_len)
+        if( (self.converted < size) and s.pieces[ piece ] ):
+            # Break if thread stopped
             if self.torrent.quit:
                 return
             # Map piece to files
-            piece_len = self.torrent.info.piece_size( self.piece )
-            for fl in self.torrent.info.map_block( self.piece, 0, piece_len ):
+            for fl in self.torrent.info.map_block( piece, 0, piece_len ):
                 # Only handle file of this stream
                 if fl.file_index == self.index:
                     # Feed block to convertor
-                    self.current += fl.size
-                    self.piece   += 1
+                    self.converted += 1
+                    piece += 1
+                    print >> sys.stderr, "%s: piece %d len %d\n" % (self.path, fl.offset, fl.size)
                     self.feed( fl.offset, fl.size )
-                    print >> sys.stderr, "%s: piece %d len %d\n" % (self.path, self.current, fl.size)
 
     # Close opened handles
     def close(self):
@@ -133,9 +151,6 @@ class Stream:
                 pass
             self.source = None
         self.closed = True
-        if self.current == self.size:
-            self.done = True
-        self.current = 0
 
     def delete(self):
         try:
@@ -269,7 +284,6 @@ class Torrent:
         finally:
             self.ses.remove_torrent( self.handle, lt.options_t.delete_files )
             self.session.torrents.remove(self)
-    
     # Return stream by path
     def __getitem__(self, path):
         for s in self.streams:
@@ -287,7 +301,6 @@ class Torrent:
                     "openURL", "http://%s/%s.stream/stream.m3u8" % (SERVER_ADDRESS, stream.path) ])
         except Exception as e:
             print >> sys.stderr, cmd
-            
 
     # Print status line
     def print_status(self):
@@ -306,12 +319,17 @@ class Torrent:
 
     # Pump data to convertors
     def pump(self):
+        done = True
         for stream in self.streams:
             try:
                 stream.pump()
+                if not stream.isComplete():
+                    done = False
             except Exception as e:
                 print >> sys.stderr, "Stream error: %s" % e
                 stream.close()
+            finally:
+                return done
 
     def select(self, streams):
         for stream in self.streams:
@@ -348,9 +366,10 @@ class Torrent:
 
         counter = 0
 
+        done = False
         # Main cycle
-        while (not self.handle.is_seed() and not self.quit):
-            self.pump()
+        while (not done and not self.quit):
+            done = self.pump()
             self.print_status()
             counter += 1
             if not (counter % 10):

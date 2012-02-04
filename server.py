@@ -146,7 +146,7 @@ class ControlHandler(BaseHandler):
         command = self.get_argument("command","start")
         torrent = self.application.loader[torrent]
         if command == "start":
-            torrent.select( [filename] )
+            torrent.select( self.request.arguments['file'] )
             torrent.start()
         else:
             torrent.stop()

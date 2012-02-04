@@ -8,20 +8,29 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <link rel="stylesheet" href="/static/style.css">
-        <script src="/static/jquery-1.6.2.min.js"></script>
+        <script src="/static/zepto.min.js"></script>
         <script>
+            // All is global
+            isWorking = false;
             $(document).ready(function() {
                 $('.btn1').click( function() {
                     $('#panel1').show();
                     $('#panel2').hide();
+                    $("video").hide()
                 } ).click();
                 $('.btn2').click( function() {
                     $('#panel1').hide();
                     $('#panel2').show();
                 });
-                if( $('.loading').length ) {
-                    setTimeout( function() { window.location.reload(); }, 10000 );
+                if( $('.loading').length > 0 || isWorking) {
+                    refresh = setTimeout( function() { window.location.reload(); }, 10000 );
                 }
+                $('.video').click( function() {
+                    var url = $(this).attr("href")
+                    $("video").attr("src", url).show()
+                    clearTimeout( refresh )
+                    return false;
+                });
             });
         </script>
     </head>
@@ -36,6 +45,7 @@
                 </div><!--content-->
             </div><!--sidebar-->
             <div id="main">
+                <video style="display: none" controls autoplay ></video>
                 <div class="header">
                     {% block header %}{% end %} 
                 </div>

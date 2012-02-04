@@ -83,12 +83,20 @@ label {
     text-align: left;
 }
 
+video {
+    z-index: 20;
+    width: 100%;
+    height: 480px;
+    padding: 0;
+    margin: 0;
+}
+
 input {
     border: 0;
     width: 100%;
 }
 
-input[type=radio] {
+input[type=checkbox] {
     position: relative;
     z-index: 10;
     width: 20px;
@@ -102,6 +110,8 @@ input[type=radio] {
 }
 
 .loading {
+    display: block;
+    padding: 10px;
     float: right;
 }
 
@@ -175,11 +185,11 @@ input[type=radio] {
     position: absolute;
     font-size: 10px;
     height: 40px;
-    margin: 0;
-    border-radius: 6px;
+    margin: 2px;
+    max-width: 100%;
 }
 
-.converted {
+.downloaded {
 background: rgb(252,234,187); /* Old browsers */
 background: -moz-linear-gradient(top, rgba(252,234,187,1) 0%, rgba(252,205,77,1) 50%, rgba(248,181,0,1) 51%, rgba(251,223,147,1) 100%); /* FF3.6+ */
 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,234,187,1)), color-stop(50%,rgba(252,205,77,1)), color-stop(51%,rgba(248,181,0,1)), color-stop(100%,rgba(251,223,147,1))); /* Chrome,Safari4+ */
@@ -188,12 +198,9 @@ background: -o-linear-gradient(top, rgba(252,234,187,1) 0%,rgba(252,205,77,1) 50
 background: -ms-linear-gradient(top, rgba(252,234,187,1) 0%,rgba(252,205,77,1) 50%,rgba(248,181,0,1) 51%,rgba(251,223,147,1) 100%); /* IE10+ */
 background: linear-gradient(top, rgba(252,234,187,1) 0%,rgba(252,205,77,1) 50%,rgba(248,181,0,1) 51%,rgba(251,223,147,1) 100%); /* W3C */
 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fceabb', endColorstr='#fbdf93',GradientType=0 ); /* IE6-9 */
-
-    max-width: 100%;
 }
 
-.downloaded {
-    max-width: 100%;
+.converted {
 background: rgb(157,213,58); /* Old browsers */
 background: -moz-linear-gradient(top, rgba(157,213,58,1) 0%, rgba(161,213,79,1) 50%, rgba(128,194,23,1) 51%, rgba(124,188,10,1) 100%); /* FF3.6+ */
 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(157,213,58,1)), color-stop(50%,rgba(161,213,79,1)), color-stop(51%,rgba(128,194,23,1)), color-stop(100%,rgba(124,188,10,1))); /* Chrome,Safari4+ */
