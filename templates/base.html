@@ -1,4 +1,4 @@
-<!DOCTYPE html">
+<!DOCTYPE html>
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -12,6 +12,11 @@
         <script>
             // All is global
             isWorking = false;
+            isIOS =  navigator.userAgent.match(/iPhone/i) ||
+                     navigator.userAgent.match(/iPad/i) ||
+                     navigator.userAgent.match(/AppleTV/i) ||
+                     navigator.userAgent.match(/iPod/i);
+
             $(document).ready(function() {
                 $('.btn1').click( function() {
                     $('#panel1').show();
@@ -27,6 +32,9 @@
                 }
                 $('.video').click( function() {
                     var url = $(this).attr("href")
+                    if( !isIOS ) {
+                        url = url.substring( 0, url.length - ".stream/stream.m3u8".length )
+                    }
                     $("video").attr("src", url).show()
                     clearTimeout( refresh )
                     return false;

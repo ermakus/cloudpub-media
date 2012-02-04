@@ -36,8 +36,7 @@ class Application(tornado.web.Application):
             static_path=os.path.join(os.path.dirname(__file__), "static"),
             cookie_secret='LHD(*#EHKJDFBSD(*F#RGM>NJK',
         )
-        self.loader = Session()
-        self.loader.load()
+        self.loader = Session.load()
         tornado.web.Application.__init__(self, handlers, **settings)
 
 class BaseHandler(tornado.web.RequestHandler, ValidationMixin):

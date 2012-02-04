@@ -9,6 +9,7 @@ import threading
 import ConfigParser
 import os
 import shutil
+import jsonpickle
 from settings import SERVER_ADDRESS, PLAYER_ADDRESS, BASE_DIR, DOWNLOAD_DIR, ENCODER
 
 # Event pattern
@@ -46,7 +47,7 @@ class EventHook(object):
 
 
 # Incapsulate decoding stream
-class Stream:
+class Stream(object):
 
     def __init__(self, torrent):
         self.torrent = torrent
@@ -163,16 +164,22 @@ class Stream:
             print >> sys.stderr, "Stream folder %s.stream not found" % (self.path) 
 
 # Torrent sequental loader
-class Session:
+class Session(object):
 
     # Constructor
     def __init__(self):
         # Create session
+        self.torrents = []
+        self.count = 0
+        self.rebind()
+
+    def rebind(self):
         self.ses = lt.session()
         self.ses.set_alert_mask(lt.alert.category_t.progress_notification)
         self.ses.listen_on(6881, 6891)
-        self.torrents = []
-        self.count = 0
+        for torrent in self.torrents:
+            torrent.session = self
+            torrent.rebind()
 
     # Add torrent to session
     def add(self, path):
@@ -196,22 +203,23 @@ class Session:
 
     # Save session
     def save(self):
-        config = ConfigParser.ConfigParser()
-        config.add_section('torrents')
-        for torrent in self.torrents:
-            config.set('torrents', 'torrent-%s' % torrent.index, torrent.path)
-        with open( DOWNLOAD_DIR + '/torrents.cfg', 'wb') as configfile:
-            config.write(configfile)
+        state = jsonpickle.encode(self)
+        with open( DOWNLOAD_DIR + '/state.json', 'wb') as config:
+            config.write(state)
 
     # Load session
-    def load(self):
+    @staticmethod
+    def load():
         config = ConfigParser.ConfigParser()
-        config.read( DOWNLOAD_DIR + '/torrents.cfg')
         try:
-            for item in config.items('torrents'):
-                self.add( item[1] )
-        except ConfigParser.NoSectionError:
-            pass
+            with open( DOWNLOAD_DIR + '/state.json' ,'rb') as config:
+                state = config.read()
+                clone = jsonpickle.decode(state)
+                clone.rebind()
+                return clone
+        except IOError:
+            return Session()
+
 
 class TorrentThread(threading.Thread):
 
@@ -223,19 +231,22 @@ class TorrentThread(threading.Thread):
         self.torrent.run()
 
 # Torrent wrapper
-class Torrent:
+class Torrent(object):
     
     # Load torrent
     def __init__(self, session, path):
         self.started = False
         self.quit = False
         self.path = path
+        self.complete = False
         self.session  = session
-        self.ses = session.ses
-        self.info = lt.torrent_info(path)
         self.thread = None
+        self.streams = []
+        self.rebind()
 
-        self.handle = self.ses.add_torrent({
+    def rebind(self):
+        self.info = lt.torrent_info(self.path)
+        self.handle = self.session.ses.add_torrent({
             'ti': self.info,
             'save_path': './',
             'auto_managed': True,
@@ -246,7 +257,6 @@ class Torrent:
         self.handle.pause()
 
         # Construct streams from files
-        self.streams = []
         num_files    = self.info.num_files()
 
         for index in xrange(0,num_files):
@@ -257,19 +267,20 @@ class Torrent:
                 continue
 
             preq   = self.info.map_file(index, 0, 0)
-            stream = Stream(self)
-            stream.index = index
+            path  = DOWNLOAD_DIR + "/" + entry.path
+            stream = self[ path ]
+            if not stream:
+                stream = Stream(self)
+                stream.index = index
+                stream.selected = True
+                stream.path  = path
+                self.streams.append(stream)
             stream.piece = preq.piece
             stream.start = preq.start
             stream.size  = entry.size
-            stream.path  = DOWNLOAD_DIR + "/" + entry.path
+            stream.onStart = EventHook()
             stream.onStart += self.stream_ready
-            self.streams.append(stream)
-            print >> sys.stderr, "File %s offset %d start %s" % (stream.path, stream.piece, stream.start) 
 
-        if len(self.streams) > 0:
-            self.streams[0].selected = True
-            self.prepare()
 
     def getFilename(self):
         return os.path.basename( self.path )
@@ -321,20 +332,20 @@ class Torrent:
     def pump(self):
         done = True
         for stream in self.streams:
-            try:
+            #try:
                 stream.pump()
                 if not stream.isComplete():
                     done = False
-            except Exception as e:
-                print >> sys.stderr, "Stream error: %s" % e
-                stream.close()
-            finally:
-                return done
+            #except Exception as e:
+            #    print >> sys.stderr, "Stream error: %s" % e
+            #    stream.close()
+        self.complete = done
+        return self.complete
 
     def select(self, streams):
         for stream in self.streams:
             stream.selected = (stream.path in streams)
-            self.prepare()
+        self.prepare()
 
     # Prepare selected streams for download
     def prepare(self):

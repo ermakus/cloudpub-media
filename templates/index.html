@@ -41,15 +41,16 @@
                  </li>
                {% end %}
             </ul>
-            <!-- Wow! Govnokod -->
             {% if not stream.isComplete() %}<script>isWorking = true;</script>{% end %}
-            {% if torrent.started %}
-            <input type="hidden" name="command" value="stop">
-            <input type="submit" class="button red stop" value="Pause">
-            {% else %}
-            <input type="hidden" name="command" value="start"/>
-            <input type="submit" class="button green start" value="Start">
-            {% end %} 
+                {% if torrent.started %}
+                <input type="hidden" name="command" value="stop">
+                <input type="submit" class="button red stop" value="Pause">
+                {% else %}
+                    {% if not torrent.complete %}
+                    <input type="hidden" name="command" value="start"/>
+                    <input type="submit" class="button green start" value="Convert">
+                    {% end %}
+                {% end %}
             {% else %}
             <div class="box-white-help">
                 <p>
