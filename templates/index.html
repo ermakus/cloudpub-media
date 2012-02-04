@@ -21,10 +21,12 @@
             <h2 id="torrent-{{ torrent.index }}" class="title">{{ torrent.getFilename() }}</h2>
             <input type="hidden" name="torrent" value="{{ torrent.path }}">
             {% if len(torrent.streams) > 0 %}
-            <div class="box-white">
+            <ul class="box-white">
                {% for stream in torrent.streams %}
-                <p>
+                <li>
                     <input id="file-{{ torrent.index}}-{{ stream.index }}" type="radio" name="file" value="{{ stream.path }}" {% if stream.selected %}checked{% end %}>
+                    <div class="progress converted" style="width: {{ stream.getConverted() }}%"></div>
+                    <div class="progress downloaded" style="width: {{ stream.getDownloaded() }}%"></div>
                     <label for="file-{{ torrent.index }}-{{ stream.index }}">
                         {% if torrent.started and stream.selected and not stream.isAvailable() %}
                         <img class="loading" src="/static/loading.gif">
@@ -36,15 +38,15 @@
                         <span class="filename">{{ stream.getFilename() }}</span>
                         {% if stream.isAvailable() %}</a>{% end %}
                     </label>
-                 </p>
+                 </li>
                {% end %}
-            </div>
+            </ul>
             {% if torrent.started %}
             <input type="hidden" name="command" value="stop">
-            <input type="submit" class="button red stop" value="Stop">
+            <input type="submit" class="button red stop" value="Pause">
             {% else %}
             <input type="hidden" name="command" value="start"/>
-            <input type="submit" class="button green start" value="Play">
+            <input type="submit" class="button green start" value="Start">
             {% end %} 
             {% else %}
             <div class="box-white-help">

@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from __future__ import division
 from subprocess import call, Popen, PIPE
 import libtorrent as lt
 import time
@@ -8,7 +9,7 @@ import threading
 import ConfigParser
 import os
 import shutil
-from settings import SERVER_ADDRESS, PLAYER_ADDRESS, BASE_DIR, DOWNLOAD_DIR
+from settings import SERVER_ADDRESS, PLAYER_ADDRESS, BASE_DIR, DOWNLOAD_DIR, ENCODER
 
 # Event pattern
 class EventHook(object):
@@ -66,15 +67,27 @@ class Stream:
    
     # True if decoded data is available
     def isAvailable(self):
-        return self.onStart.count > 0
+        try:
+            open(self.path + ".stream/stream.m3u8")
+        except IOError as e:
+            return False
+        return True
 
     def getFilename(self):
         return self.path[len(DOWNLOAD_DIR)+1:]
+
+    def getDownloaded(self):
+        s = self.torrent.handle.status()
+        return (s.num_pieces / self.size) * 100
+
+    def getConverted(self):
+        s = self.torrent.handle.status()
+        return (self.current / self.size) * 100
  
     # Send piece of downloaded file to convertor pipe
     def feed(self, offset, size):
         if not self.worker:
-            self.worker = Popen([ BASE_DIR + '/encoder-vlc', self.path], stdin=PIPE, cwd=DOWNLOAD_DIR)
+            self.worker = Popen([ BASE_DIR + '/encoder-' + ENCODER, self.path], stdin=PIPE, cwd=DOWNLOAD_DIR)
         if not self.source:
             self.source = open( self.path,'r')
 

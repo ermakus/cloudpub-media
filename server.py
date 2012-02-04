@@ -41,10 +41,15 @@ class Application(tornado.web.Application):
         tornado.web.Application.__init__(self, handlers, **settings)
 
 class BaseHandler(tornado.web.RequestHandler, ValidationMixin):
+
     def get_login_url(self):
         return u"/login"
 
     def get_current_user(self):
+        # If password is not set return default user
+        if settings.AUTH_PASSWORD == "":
+            return settings.AUTH_USER
+        # .. else deserialize from session
         user_json = self.get_secure_cookie("user")
         if user_json:
             return tornado.escape.json_decode(user_json)
@@ -62,9 +67,12 @@ class LoginHandler(BaseHandler):
     def get(self):
         self.render("login.html", next=self.get_argument("next","/"), errors={}, username="")
 
+    def isValid(self, password):
+        return password == settings.AUTH_PASSWORD
+
     def post(self):
         username = self.valid("username", ValidationMixin.EMAIL)
-        password = self.valid("password")
+        password = self.valid("password", self.isValid)
 
         if len(self.errors) > 0:
             self.render("login.html", next=self.get_argument("next","/"), errors=self.errors, username=username)
@@ -94,9 +102,6 @@ class LogoutHandler(BaseHandler):
 
 class HomeHandler(BaseHandler):
     def get(self):
-        if not self.get_current_user():
-            self.redirect( self.get_login_url() )
-
         self.render("index.html",
                 torrents=self.application.loader.torrents,
                 SERVER_ADDRESS=settings.SERVER_ADDRESS)
@@ -141,7 +146,7 @@ class ControlHandler(BaseHandler):
         command = self.get_argument("command","start")
         torrent = self.application.loader[torrent]
         if command == "start":
-            torrent.select( [filename] )    
+            torrent.select( [filename] )
             torrent.start()
         else:
             torrent.stop()

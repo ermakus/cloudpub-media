@@ -1,0 +1,7 @@
+#!/bin/sh
+echo "Conversion of $1 started"
+segmenter=$(dirname $0)/segmenter
+#settings='-vf scale=480:-10,harddup -oac faac -faacopts mpeg=4:object=2:raw:br=128 -of lavf -lavfopts format=mp4 -ovc x264 -x264encopts nocabac:level_idc=30:bframes=0'
+
+mkdir -p "$1.stream"
+mencoder $1 -o - -really-quiet -vf scale=480:-10,harddup -oac faac -faacopts mpeg=4:object=2:raw:br=128 -ovc x264 -x264encopts nocabac:level_idc=30:bframes=0 -of lavf -lavfopts format=mpegts | $segmenter - 10 "$1.stream/stream" "$1.stream/stream.m3u8" /
