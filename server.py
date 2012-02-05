@@ -17,8 +17,9 @@ from loader import Session, Torrent
 from validator import ValidationMixin
 import settings
 
-define("port", default=8888, help="run on the given port", type=int)
-define('host', default="0.0.0.0", help="The binded ip host")
+define("port",   default=8888, help="run on the given port", type=int)
+define('host',   default="0.0.0.0", help="The binded ip host")
+define('domain', default="localhost", help="Public domain")
 
 PER_PAGE=10
 
@@ -181,6 +182,7 @@ def main():
     tornado.options.parse_command_line()
     app = Application()
     http_server = tornado.httpserver.HTTPServer( app )
+    settings.SERVER_ADDRESS = options.domain
     http_server.listen(options.port, options.host)
     try:
         tornado.ioloop.IOLoop.instance().start()
