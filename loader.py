@@ -217,7 +217,8 @@ class Session(object):
                 clone = jsonpickle.decode(state)
                 clone.rebind()
                 return clone
-        except IOError:
+        except Exception as e:
+            print >> sys.stderr, "Load error, reset session: %s" % e
             return Session()
 
 
@@ -293,7 +294,7 @@ class Torrent(object):
         except OSError as e:
             print >> sys.stderr, "File %s not found" % (self.path) 
         finally:
-            self.ses.remove_torrent( self.handle, lt.options_t.delete_files )
+            self.session.ses.remove_torrent( self.handle, lt.options_t.delete_files )
             self.session.torrents.remove(self)
     # Return stream by path
     def __getitem__(self, path):
@@ -332,13 +333,13 @@ class Torrent(object):
     def pump(self):
         done = True
         for stream in self.streams:
-            #try:
+            try:
                 stream.pump()
                 if not stream.isComplete():
                     done = False
-            #except Exception as e:
-            #    print >> sys.stderr, "Stream error: %s" % e
-            #    stream.close()
+            except Exception as e:
+                print >> sys.stderr, "Stream error: %s" % e
+                stream.close()
         self.complete = done
         return self.complete
 

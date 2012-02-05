@@ -5,12 +5,14 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.options
 import tornado.web
+import tornado.auth
 import unicodedata
 import sys
 import urllib2
 from urlparse import urlsplit
 from tornado.options import define, options
 from tornado.escape import url_escape
+
 from loader import Session, Torrent
 from validator import ValidationMixin
 import settings
@@ -24,9 +26,8 @@ class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r"/",         HomeHandler),
-            (r"/login",    LoginHandler),
+            (r"/auth",     AuthHandler),
             (r"/logout",   LogoutHandler),
-            (r"/register", RegisterHandler),
             (r"/fetch",    DownloadHandler),
             (r"/ctrl",     ControlHandler),
             (r"/del",      DeleteHandler),
@@ -44,64 +45,76 @@ class BaseHandler(tornado.web.RequestHandler, ValidationMixin):
     def get_login_url(self):
         return u"/login"
 
+    def get_error_html(self, status_code, message):
+        return "<body class='error'>%s (%d)</body>" % (message, status_code)
+
+    def send_error(self, status_code=500, **kwargs):
+        """Sends the given HTTP error code to the browser.
+
+        We also send the error HTML for the given error code as returned by
+        get_error_html. Override that method if you want custom error pages
+        for your application.
+        """
+        if self._headers_written:
+            logging.error("Cannot send error response after headers written")
+            if not self._finished:
+                self.finish()
+            return
+        self.clear()
+        self.set_status(status_code)
+        message = self.get_error_html(status_code, **kwargs)
+        self.finish(message)
+
+    # Hook that handeld request exceptions and
+    # send 500 Exception Message to client
+    def _handle_request_exception(self, e): 
+        self.send_error( 500, e )
+
+    # Return current session context
+    # Shoud load it locally or from storage
     def get_current_user(self):
-        # If password is not set return default user
-        if settings.AUTH_PASSWORD == "":
-            return settings.AUTH_USER
-        # .. else deserialize from session
         user_json = self.get_secure_cookie("user")
         if user_json:
             return tornado.escape.json_decode(user_json)
         else:
             return None
 
+    # Set and save session locally and 
     def set_current_user(self, user):
         if user:
             self.set_secure_cookie("user", tornado.escape.json_encode(user))
         else:
             self.clear_cookie("user")
 
-class LoginHandler(BaseHandler):
-
-    def get(self):
-        self.render("login.html", next=self.get_argument("next","/"), errors={}, username="")
-
-    def isValid(self, password):
-        return password == settings.AUTH_PASSWORD
-
-    def post(self):
-        username = self.valid("username", ValidationMixin.EMAIL)
-        password = self.valid("password", self.isValid)
-
-        if len(self.errors) > 0:
-            self.render("login.html", next=self.get_argument("next","/"), errors=self.errors, username=username)
-
-        self.set_current_user(username)
-        self.redirect(self.get_argument("next", u"/"))
-
-
-class RegisterHandler(BaseHandler):
-
-    def post(self):
-        username = self.valid("username", ValidationMixin.EMAIL)
-        password = self.valid("password")
-
-        if len(self.errors) > 0:
-            self.render("login.html", next=self.get_argument("next","/"), errors=self.errors, username=username)
-
-        self.set_current_user(username)
-        self.redirect(self.get_argument("next", u"/"))
-
 class LogoutHandler(BaseHandler):
 
     def get(self):
+        self.redirect("/")
         self.clear_cookie("user")
-        self.redirect( self.get_login_url() )
 
+class AuthHandler(BaseHandler, tornado.auth.GoogleMixin):
+
+    @tornado.web.asynchronous
+    def get(self):
+        if self.get_argument("openid.mode", None):
+            self.get_authenticated_user(self.async_callback(self._on_auth))
+        else:
+            self.authenticate_redirect()
+
+    def _on_auth(self, user):
+        if not user:
+            raise tornado.web.HTTPError(500, "Google auth failed")
+        print sys.stderr, "Authenticated", user
+        self.set_secure_cookie("user", tornado.escape.json_encode(user))
+        self.redirect("/")
 
 class HomeHandler(BaseHandler):
     def get(self):
-        self.render("index.html",
+        user = self.get_current_user()
+        if not user:
+            self.redirect("/auth")
+        else:
+            self.render("index.html",
                 torrents=self.application.loader.torrents,
                 SERVER_ADDRESS=settings.SERVER_ADDRESS)
 
@@ -144,6 +157,9 @@ class ControlHandler(BaseHandler):
         filename = self.get_argument("file")
         command = self.get_argument("command","start")
         torrent = self.application.loader[torrent]
+        if not torrent:
+            self.redirect( "/" )
+
         if command == "start":
             torrent.select( self.request.arguments['file'] )
             torrent.start()
