@@ -10,7 +10,7 @@ import ConfigParser
 import os
 import shutil
 import jsonpickle
-from settings import SERVER_ADDRESS, PLAYER_ADDRESS, BASE_DIR, DOWNLOAD_DIR, ENCODER
+import settings
 
 # Event pattern
 class EventHook(object):
@@ -70,7 +70,7 @@ class Stream(object):
         # On conversion started hook
         self.onStart = EventHook()
 
-   
+
     # True if decoded data is available
     def isAvailable(self):
         try:
@@ -80,7 +80,7 @@ class Stream(object):
         return True
 
     def getFilename(self):
-        return self.path[len(DOWNLOAD_DIR)+1:]
+        return self.path[len(settings.DOWNLOAD_DIR)+1:]
 
     def isComplete(self):
         return self.closed
@@ -101,7 +101,7 @@ class Stream(object):
     # Send piece of downloaded file to convertor pipe
     def feed(self, offset, size):
         if not self.worker:
-            self.worker = Popen([ BASE_DIR + '/encoder-' + ENCODER, self.path], stdin=PIPE, cwd=DOWNLOAD_DIR)
+            self.worker = Popen([ settings.BASE_DIR + '/encoder-' + settings.ENCODER, self.path], stdin=PIPE, cwd=settings.DOWNLOAD_DIR)
         if not self.source:
             self.source = open( self.path,'r')
             self.closed = False
@@ -204,7 +204,7 @@ class Session(object):
     # Save session
     def save(self):
         state = jsonpickle.encode(self)
-        with open( DOWNLOAD_DIR + '/state.json', 'wb') as config:
+        with open( settings.DOWNLOAD_DIR + '/state.json', 'wb') as config:
             config.write(state)
 
     # Load session
@@ -212,7 +212,7 @@ class Session(object):
     def load():
         config = ConfigParser.ConfigParser()
         try:
-            with open( DOWNLOAD_DIR + '/state.json' ,'rb') as config:
+            with open( settings.DOWNLOAD_DIR + '/state.json' ,'rb') as config:
                 state = config.read()
                 clone = jsonpickle.decode(state)
                 clone.rebind()
@@ -247,12 +247,13 @@ class Torrent(object):
 
     def rebind(self):
         self.info = lt.torrent_info(self.path)
+        print >> sys.stderr, "Rebind torrent: %s" % (self.path) 
         self.handle = self.session.ses.add_torrent({
             'ti': self.info,
             'save_path': './',
             'auto_managed': True,
             'paused': True,
-            'save_path': DOWNLOAD_DIR
+            'save_path': str(settings.DOWNLOAD_DIR)
         })
         self.handle.set_sequential_download(True)
         self.handle.pause()
@@ -268,7 +269,7 @@ class Torrent(object):
                 continue
 
             preq   = self.info.map_file(index, 0, 0)
-            path  = DOWNLOAD_DIR + "/" + entry.path
+            path   = settings.DOWNLOAD_DIR + "/" + entry.path
             stream = self[ path ]
             if not stream:
                 stream = Stream(self)
@@ -276,6 +277,7 @@ class Torrent(object):
                 stream.selected = True
                 stream.path  = path
                 self.streams.append(stream)
+            stream.torrent = self
             stream.piece = preq.piece
             stream.start = preq.start
             stream.size  = entry.size
@@ -306,11 +308,12 @@ class Torrent(object):
     # Stream ready event handler
     def stream_ready(self, stream):
         print >> sys.stderr, "Stream %s ready to play" % (stream.path) 
-        if not PLAYER_ADDRESS:
+        # Here we can open URL on remote device
+        if not settings.PLAYER_ADDRESS:
             return
         try:
-            call( ['/usr/bin/ssh', 'root@' + PLAYER_ADDRESS,
-                    "openURL", "http://%s/%s.stream/stream.m3u8" % (SERVER_ADDRESS, stream.path) ])
+            call( ['/usr/bin/ssh', 'root@' + settings.PLAYER_ADDRESS,
+                    "openURL", "http://%s/%s.stream/stream.m3u8" % (settings.SERVER_ADDRESS, stream.path) ])
         except Exception as e:
             print >> sys.stderr, cmd
 

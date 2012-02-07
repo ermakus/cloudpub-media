@@ -2,8 +2,8 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>Stream torrents to iOS device</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"> 
+        <title>Download, convert and stream videos</title>
+        <meta name="viewport" content="width=device1-width, initial-scale=1.0, maximum-scale=1.0"> 
         <link rel="apple-touch-icon" href="/static/l.png">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,6 +12,7 @@
         <script>
             // All is global
             isWorking = false;
+            refresh = 0;
             isIOS =  navigator.userAgent.match(/iPhone/i) ||
                      navigator.userAgent.match(/iPad/i) ||
                      navigator.userAgent.match(/AppleTV/i) ||
@@ -27,9 +28,15 @@
                     $('#panel1').hide();
                     $('#panel2').show();
                 });
+
                 if( $('.loading').length > 0 || isWorking) {
                     refresh = setTimeout( function() { window.location.reload(); }, 10000 );
                 }
+
+                $('input').click( function() {
+                    clearTimeout( refresh )
+                });
+
                 $('.video').click( function() {
                     var url = $(this).attr("href")
                     if( !isIOS ) {
@@ -46,7 +53,7 @@
         <div id="wrap">
             <div id="sidebar">
                 <div class="header">
-                    <p class="title">Torrents</p>
+                    <p class="title">Packages</p>
                 </div><!--header-->
                 <div class="content">
                     {% block sidebar %}{% end %}

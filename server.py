@@ -17,9 +17,11 @@ from loader import Session, Torrent
 from validator import ValidationMixin
 import settings
 
-define("port",   default=8888, help="run on the given port", type=int)
+define("auth",   default=settings.AUTH, help="Auth provider (only 'google' currently)")
+define("files",  default=settings.DOWNLOAD_DIR, help="run on the given port")
+define("port",   default=settings.PORT, help="run on the given port", type=int)
 define('host',   default="0.0.0.0", help="The binded ip host")
-define('domain', default="localhost", help="Public domain")
+define('domain', default=settings.SERVER_ADDRESS, help="Public domain")
 
 PER_PAGE=10
 
@@ -46,30 +48,13 @@ class BaseHandler(tornado.web.RequestHandler, ValidationMixin):
     def get_login_url(self):
         return u"/login"
 
-    def get_error_html(self, status_code, message):
-        return "<body class='error'>%s (%d)</body>" % (message, status_code)
-
-    def send_error(self, status_code=500, **kwargs):
-        """Sends the given HTTP error code to the browser.
-
-        We also send the error HTML for the given error code as returned by
-        get_error_html. Override that method if you want custom error pages
-        for your application.
-        """
-        if self._headers_written:
-            logging.error("Cannot send error response after headers written")
-            if not self._finished:
-                self.finish()
-            return
-        self.clear()
-        self.set_status(status_code)
-        message = self.get_error_html(status_code, **kwargs)
-        self.finish(message)
+    def get_error_html(self, status_code, *args, **kwargs):
+        return "<body class='error'>%s (%d)</body>" % (kwargs, status_code)
 
     # Hook that handeld request exceptions and
     # send 500 Exception Message to client
-    def _handle_request_exception(self, e): 
-        self.send_error( 500, e )
+    #def ___handle_request_exception(self, e): 
+    #    self.send_error( 500, e )
 
     # Return current session context
     # Shoud load it locally or from storage
@@ -112,7 +97,7 @@ class AuthHandler(BaseHandler, tornado.auth.GoogleMixin):
 class HomeHandler(BaseHandler):
     def get(self):
         user = self.get_current_user()
-        if not user:
+        if not user and settings.AUTH != 'none':
             self.redirect("/auth")
         else:
             self.render("index.html",
@@ -180,9 +165,12 @@ class DeleteHandler(BaseHandler):
 
 def main():
     tornado.options.parse_command_line()
+    settings.AUTH = options.auth
+    settings.DOWNLOAD_DIR = options.files
+    print settings.DOWNLOAD_DIR
+    settings.SERVER_ADDRESS = options.domain
     app = Application()
     http_server = tornado.httpserver.HTTPServer( app )
-    settings.SERVER_ADDRESS = options.domain
     http_server.listen(options.port, options.host)
     try:
         tornado.ioloop.IOLoop.instance().start()
