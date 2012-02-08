@@ -2,7 +2,7 @@
   "author": "Anton Ermak <anton@ermak.us> (http://ermak.us)",
   "name": "cloudpub-media",
   "description": "Media management tool",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "homepage": "http://media.cloudpub.us",
   "repository": {
     "url": "git@github.com:ermakus/cloudpub-media.git"
