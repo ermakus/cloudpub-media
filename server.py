@@ -18,6 +18,7 @@ from validator import ValidationMixin
 import settings
 
 define("auth",   default=settings.AUTH, help="Auth provider (only 'google' currently)")
+define("home",   default="/", help="home dir")
 define("files",  default=settings.DOWNLOAD_DIR, help="run on the given port")
 define("port",   default=settings.PORT, help="run on the given port", type=int)
 define('host',   default="0.0.0.0", help="The binded ip host")
@@ -166,8 +167,12 @@ class DeleteHandler(BaseHandler):
 def main():
     tornado.options.parse_command_line()
     settings.AUTH = options.auth
-    settings.DOWNLOAD_DIR = options.files
-    print settings.DOWNLOAD_DIR
+    # Handle cloudpub "home" param
+    if options.files != settings.DOWNLOAD_DIR:
+        settings.DOWNLOAD_DIR = options.files
+    else:
+        if options.home != "/":
+            settings.DOWNLOAD_DIR = options.home + "/var/media"
     settings.SERVER_ADDRESS = options.domain
     app = Application()
     http_server = tornado.httpserver.HTTPServer( app )
