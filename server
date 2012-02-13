@@ -21,20 +21,20 @@ define("auth",   default=settings.AUTH, help="Auth provider (only 'google' curre
 define("home",   default="/", help="cloupub home dir")
 define("files",  default=settings.DOWNLOAD_DIR, help="directory to save files")
 define("port",   default=settings.PORT, help="run on the given port", type=int)
+define("proxy_port",   default=settings.PROXY_PORT, help="public proxy port", type=int)
 define('host',   default="0.0.0.0", help="The binded ip host")
 define('domain', default=settings.SERVER_ADDRESS, help="public domain name")
 
-PER_PAGE=10
-
 class Application(tornado.web.Application):
-    def __init__(self):
+    def __init__(self, download_dir):
         handlers = [
-            (r"/",         HomeHandler),
-            (r"/auth",     AuthHandler),
-            (r"/logout",   LogoutHandler),
-            (r"/fetch",    DownloadHandler),
-            (r"/ctrl",     ControlHandler),
-            (r"/del",      DeleteHandler),
+            (r"/",            HomeHandler),
+            (r".*(mp3u8|ts)", tornado.web.StaticFileHandler, { "path": download_dir } ),
+            (r"/auth",        AuthHandler),
+            (r"/logout",      LogoutHandler),
+            (r"/fetch",       DownloadHandler),
+            (r"/ctrl",        ControlHandler),
+            (r"/del",         DeleteHandler),
         ]
         settings = dict(
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
@@ -73,6 +73,7 @@ class BaseHandler(tornado.web.RequestHandler, ValidationMixin):
         else:
             self.clear_cookie("user")
 
+
 class LogoutHandler(BaseHandler):
 
     def get(self):
@@ -103,7 +104,7 @@ class HomeHandler(BaseHandler):
         else:
             self.render("index.html",
                 torrents=self.application.loader.torrents,
-                SERVER_ADDRESS=settings.SERVER_ADDRESS)
+                SERVER_ADDRESS=settings.SERVER_ADDRESS, PORT=settings.PORT, PROXY_PORT=settings.PROXY_PORT)
 
 def url2name(url):
     return os.path.basename(urlsplit(url)[2])
@@ -167,6 +168,14 @@ class DeleteHandler(BaseHandler):
 def main():
     tornado.options.parse_command_line()
     settings.AUTH = options.auth
+    settings.PORT = options.port
+    # in case service run over nginx proxy,
+    # the public proxy_port is different from private port
+    if settings.PROXY_PORT != options.proxy_port:
+        settings.PROXY_PORT = options.proxy_port
+    else:
+        settings.PROXY_PORT = options.port
+
     # Handle cloudpub "home" param
     if options.files != settings.DOWNLOAD_DIR:
         settings.DOWNLOAD_DIR = options.files
@@ -174,7 +183,7 @@ def main():
         if options.home != "/":
             settings.DOWNLOAD_DIR = options.home + "/var/media"
     settings.SERVER_ADDRESS = options.domain
-    app = Application()
+    app = Application(settings.DOWNLOAD_DIR)
     http_server = tornado.httpserver.HTTPServer( app )
     http_server.listen(options.port, options.host)
     try:
